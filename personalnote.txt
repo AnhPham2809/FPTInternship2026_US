@@ -1,0 +1,52 @@
+Anh Pham's FPT Internship 2026 Notes
+
+
+-----------------------------------
+Week 1
+Date: June 1st - 7th
+-----------------------------------
+
+1. Setup Environment
+python3 installed
+pip3 installed
+git installed
+Repository cloned: FPTInternship2026_US
+Github link: https://github.com/AnhPham2809/FPTInternship2026_US
+
+2. Setup Folder Structures
+3. Virtual Environment
+Using venv,
+Activation: source venv/bin/activate
+
+4. Dependencies for python
+Installed sseclient-py
+pip freeze > requirements.txt for more info
+
+5. Installed Google Cloud SDK / gcloudCLI
+Installed by following GcloudSDK instructions.
+Created project fpt-internship-2026
+Setup gcloud auth application-default login to save login.
+
+6. Understanding Wikimedia
+Wikimedia is broadcast publicly on Wikipedia's changes.
+Goal is to build a streaming data pipeline of this.
+
+7. streamer.python
+Connected Wikimedia SSE feed and print the JSON events to the console
+
+SSE: Server Sent Event -> One way connection where server gives data to client
+Used iter_line() to read stream line by line 
+data: prefix: is how sse events are formatted.
+json.loads convert dictionary back to streaming
+
+Final Result for Week 1:
+10 minutes of stable running with no dropped connections or exceptions.
+
+Issues/Challenges:
+At first, it is stuck in the reconnecting loop with Wikimedia giving 403 Forbbiden Error.
+I added User-Agent handle to identify the script to Wikimedia itself.
+
+SSL Certifcation Error was a problem because I'm using WSL but I add verify=false to bypass it.
+
+sseclient-py was having trouble maintaining connection so I replaced it
+with iter_lines to read line by line.
