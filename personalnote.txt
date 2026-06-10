@@ -50,3 +50,26 @@ SSL Certifcation Error was a problem because I'm using WSL but I add verify=fals
 
 sseclient-py was having trouble maintaining connection so I replaced it
 with iter_lines to read line by line.
+
+
+----------------------------------
+TO DO: Note Outcome -> Note to Powerpoint/Slides. Note on what you did on the week, explain to three group: 
++ Managers; Know what to do next.
++ Analyst; What do you see/understand/observe. -> Provide data, numbers. 
++ Technical; What did you use to make it; technics, technologies, performance, volume etc... 
+----------------------------------
+
+Week 2 To Do / Plan
+Use streamer.py and publish event to GCP.
+
+1 - GCP Setup with Cloud Console:
+Enable and learn about PUB/SUB API. 
+2 - Python Setup, update requirements.txt - Pub Sub Library
+3- Update streamer.py
+Add Support for Pub/Sub publisher client
+Initialize the publisher
+Turn event to JSON bytes
+Publish message to topic
+Add more Error handling
+4- Testing / Validation
+Verify Pub/Sub working
