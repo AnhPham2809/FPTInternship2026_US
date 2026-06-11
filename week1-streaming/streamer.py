@@ -42,13 +42,13 @@ def main():
                             data = json.loads(raw) # Parse string into Python dictionary
                             message_bytes = json.dumps(data).encode("utf-8") # Serialize dict to JSON bytes, Pub/Sub only accepts bytes
                             future = publisher.publish(topic_path, message_bytes) # Publish message to GCP Pub/Sub topic asynchronously
-                            future.add_done_callback(lambda f: publish_callback(f, data)) # Attach callback to handle confirmation in background
-                            print(f"Sent to Pub/Sub: {data.get('title', 'unknown')}") # Print article title for readability
-                        except json.JSONDecodeError: # try block errors
+                            future.add_done_callback(lambda f: publish_callback(f, data)) # Callback Confirmation
+                            print(f"Sent to Pub/Sub: {data.get('title', 'unknown')}") # Print article title 
+                        except json.JSONDecodeError: 
                             continue
-                        except Exception as e: # Catch any publish errors
+                        except Exception as e: 
                             print(f"Failed to publish message: {e}") # Log the error
-                            continue # Skip failed message and move to next event
+                            continue # Skip failed message 
         except Exception as e:
             print(f"Connection error: {e}") # Error msg
             print("Reconnecting in 3 seconds.")
