@@ -59,17 +59,61 @@ TO DO: Note Outcome -> Note to Powerpoint/Slides. Note on what you did on the we
 + Technical; What did you use to make it; technics, technologies, performance, volume etc... 
 ----------------------------------
 
-Week 2 To Do / Plan
-Use streamer.py and publish event to GCP.
+-----------------------------------
+Week 2
+Date: June 8th - 14th
+-----------------------------------
 
-1 - GCP Setup with Cloud Console:
-Enable and learn about PUB/SUB API. 
-2 - Python Setup, update requirements.txt - Pub Sub Library
-3- Update streamer.py
-Add Support for Pub/Sub publisher client
-Initialize the publisher
-Turn event to JSON bytes
-Publish message to topic
-Add more Error handling
-4- Testing / Validation
-Verify Pub/Sub working
+1. GCP Pub/Sub Setup
+Enabled Cloud Pub/Sub API on project fpt-internship-2026
+Created topic: live-wikimedia-stream
+Created via gcloud CLI: gcloud pubsub topics create live-wikimedia-stream
+
+2. Python Environment Update
+Installed google-cloud-pubsub
+Updated requirements.txt with new dependencies
+
+3. Understanding Pub/Sub
+Pub/Sub = Publish/Subscribe, a cloud messaging system.
+Publisher: streamer.py sends Wikipedia events to the cloud
+Topic: live-wikimedia-stream receives and holds messages
+Subscriber: BigQuery (Week 3) will read from the topic
+
+ADC = Application Default Credentials
+Set up in Week 1 via gcloud auth application-default login
+Pub/Sub publisher automatically uses ADC to authenticate, no manual login needed.
+
+4. Upgrading streamer.py
+Added pubsub_v1 import from google.cloud
+Added PROJECT_ID and TOPIC_ID constants
+Initialized PublisherClient and topic_path
+Serialized each event to JSON bytes before publishing
+Pub/Sub only accepts bytes, not strings or dictionaries.
+Added async callback function to handle confirmations in background
+
+Synchronous vs Asynchronous Publishing:
+Synchronous: Script waits for GCP confirmation before sending next message. Slow.
+Asynchronous: Script sends message and immediately moves to next event. Fast.
+Callback handles confirmations in the background without blocking.
+
+5. Testing and Validation
+Sustained message rate: 23-26 messages/second
+Average message size: 1,504 - 1,664 bytes
+Errors: None
+Test duration: 5+ minutes
+
+Final Result for Week 2:
+23-26 messages/second sustained with zero errors logged.
+Evaluation metric of 20-50 messages/second passed.
+
+Issues/Challenges:
+403 SERVICE_DISABLED error on first run.
+Fixed by enabling Pub/Sub API in GCP Console.
+
+404 Resource not found error.
+Topic was not saved properly from GCP Console.
+Fixed by creating topic directly via gcloud CLI.
+
+Low message rate of 1.2/second on first version.
+Fixed by switching from synchronous to asynchronous publishing.
+Rate jumped to 23-26 messages/second after fix.

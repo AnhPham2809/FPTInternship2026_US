@@ -19,7 +19,6 @@ def connect_to_stream():
         "User-Agent": "FPTInternship2026/1.0 (anhphamofficial2809@gmail.com) requests/2.34.2" # Identify yourself to Wikimedia
     }
     response = requests.get(STREAM_URL, headers=headers, stream=True, verify=False) # Opens HTTP to Wikimedia URL, used by STREAM_URL above.
-    print(f"Status code: {response.status_code}") # Response Debug, ignore.
     return response 
 
 def publish_callback(future, data):
