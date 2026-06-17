@@ -117,3 +117,21 @@ Fixed by creating topic directly via gcloud CLI.
 Low message rate of 1.2/second on first version.
 Fixed by switching from synchronous to asynchronous publishing.
 Rate jumped to 23-26 messages/second after fix.
+--------------------------------------
+Three Schemas:
+Planned Schemas
+Transformation Schema - What I want to store. Something new but meaningful Data.
+Landing Schema - What information I want to extract, what metrics, ...
+
+Make BigQueryAPI and connect to Pub/Sub
+Pub/Sub should only connects to the first planned Schema. 
+
+Enrich Data from Landing Schema to Transformation Schema
+
+Use Pro Version of Claude. 
+Setup MCP to connect to Github. 
+Be more innovative? What type of data I want, what type of data to focus on. 
+At least 5 more columns in transformation Schema more than Landing Schema
+What is the value of Wikimedia Data, and what type of questions that can be answered
+using Wikimedia Data. 
+
