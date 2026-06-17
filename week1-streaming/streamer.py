@@ -26,6 +26,31 @@ def publish_callback(future, data):
         print(f"Failed to publish message: {future.exception()}") # Log the error
     # If no exception, message was published 
 
+
+def build_landing_record(data):
+    # Only process actual edit events, skip log events (blocks, deletions, etc.)
+    if data.get("type") != "edit":
+        return None
+    
+    length = data.get("length", {}) # Nested object, may be missing on some events
+    
+    record = {
+        "id": data.get("id"),
+        "title": data.get("title"),
+        "user": data.get("user"),
+        "bot": data.get("bot"),
+        "wiki": data.get("wiki"),
+        "type": data.get("type"),
+        "namespace": data.get("namespace"),
+        "timestamp": data.get("timestamp"),
+        "meta_dt": data.get("meta", {}).get("dt"), # Flatten nested meta.dt
+        "length_old": length.get("old"),
+        "length_new": length.get("new"),
+        "comment": data.get("comment"),
+        "minor": data.get("minor")
+    }
+    return record
+
 def main():
     print("I'm currently connecting to Wikimedia stream!") # debug purpose ignore
     while True:
@@ -39,10 +64,13 @@ def main():
                         raw = decoded[5:].strip() 
                         try:
                             data = json.loads(raw) # Parse string into Python dictionary
-                            message_bytes = json.dumps(data).encode("utf-8") # Serialize dict to JSON bytes, Pub/Sub only accepts bytes
+                            record = build_landing_record(data) # Filter and flatten to match landing schema
+                            if record is None: # Skip non-edit events (logs, blocks, etc.)
+                                continue
+                            message_bytes = json.dumps(record).encode("utf-8") # Serialize flat record to JSON bytes
                             future = publisher.publish(topic_path, message_bytes) # Publish message to GCP Pub/Sub topic asynchronously
-                            future.add_done_callback(lambda f: publish_callback(f, data)) # Callback Confirmation
-                            print(f"Sent to Pub/Sub: {data.get('title', 'unknown')}") # Print article title 
+                            future.add_done_callback(lambda f: publish_callback(f, record)) # Callback Confirmation
+                            print(f"Sent to Pub/Sub: {record.get('title', 'unknown')}") # Print article title
                         except json.JSONDecodeError: 
                             continue
                         except Exception as e: 
