@@ -118,20 +118,89 @@ Low message rate of 1.2/second on first version.
 Fixed by switching from synchronous to asynchronous publishing.
 Rate jumped to 23-26 messages/second after fix.
 --------------------------------------
-Three Schemas:
-Planned Schemas
-Transformation Schema - What I want to store. Something new but meaningful Data.
-Landing Schema - What information I want to extract, what metrics, ...
+-----------------------------------
+Week 3
+Date: June 15th - 21st
+-----------------------------------
 
-Make BigQueryAPI and connect to Pub/Sub
-Pub/Sub should only connects to the first planned Schema. 
+1. Project Direction
+Decided to focus on Real-Time Content Quality Tracker.
+Core question: Is Wikipedia growing or shrinking right now?
+Tracks whether edits add or remove content, across all
+editor types (bot, registered, anonymous), in real time.
 
-Enrich Data from Landing Schema to Transformation Schema
+2. Three Schemas Designed
+Planned Schema: design blueprint and goals, no data.
+Landing Schema: 13 raw fields extracted from Wikimedia JSON,
+filtered to type == "edit" only (excludes log events like
+blocks/deletions since they lack the length field).
+Transformation Schema: 18 fields, 11 inherited + 7 new
+derived columns (edit_size, edit_direction, is_large_edit,
+contributor_type, is_vandalism_signal, hour_of_day,
+content_change_category).
 
-Use Pro Version of Claude. 
-Setup MCP to connect to Github. 
-Be more innovative? What type of data I want, what type of data to focus on. 
-At least 5 more columns in transformation Schema more than Landing Schema
-What is the value of Wikimedia Data, and what type of questions that can be answered
-using Wikimedia Data. 
+3. GCP BigQuery Setup
+Enabled BigQuery API on fpt-internship-2026.
+Created dataset: wikimedia_data
+bq mk --dataset --location=US fpt-internship-2026:wikimedia_data
+
+Created three tables using JSON schema files:
+- planned_schema (reference table)
+- recentchange_landing (13 fields)
+- recentchange_transformed (18 fields)
+bq mk --table fpt-internship-2026:wikimedia_data.TABLE_NAME schema.json
+
+4. Connected Pub/Sub to BigQuery Landing Table
+Created subscription: wikimedia-to-bigquery
+gcloud pubsub subscriptions create wikimedia-to-bigquery
+  --topic=live-wikimedia-stream
+  --bigquery-table=fpt-internship-2026:wikimedia_data.recentchange_landing
+  --use-table-schema
+
+Granted roles/bigquery.dataEditor to Pub/Sub service account
+so it has permission to write to BigQuery.
+
+5. Built Transformation SQL Query
+Wrote INSERT INTO query in week3-bigquery/transformation_query.sql
+Reads from recentchange_landing, computes 7 derived columns,
+inserts into recentchange_transformed.
+Used WHERE id NOT IN (...) to prevent duplicate inserts on
+repeated runs.
+
+6. Validation
+Confirmed landing table row count increases in real time
+while streamer.py runs (evaluation metric passed).
+Confirmed transformation table populates correctly with
+accurate derived columns.
+Found genuine insight: commonswiki and wikidatawiki showing
+the largest net content growth, driven mostly by bot edits.
+
+Final Result for Week 3:
+Evaluation metric passed - SELECT COUNT(*) increases in
+real time while pipeline runs.
+
+Issues/Challenges:
+DML (INSERT INTO) queries require a billing account linked
+to the GCP project, even within free tier limits.
+Fixed by linking existing billing account:
+gcloud billing projects link fpt-internship-2026
+  --billing-account=ACCOUNT_ID
+Set up a $50 budget alert with email notifications at
+50%, 90%, 100% thresholds as a safety net.
+
+Pub/Sub to BigQuery subscription initially failed with
+invalid_argument errors. Root cause: streamer.py was
+publishing the full raw Wikimedia JSON (including nested
+fields like meta.dt and length.old/new) which did not match
+the flat landing table schema.
+Fixed by adding build_landing_record() function in
+streamer.py to filter to edit-type events only and flatten
+nested fields before publishing.
+
+contributor_type regex initially showed zero anonymous
+editors. Investigation revealed Wikipedia now masks
+anonymous editors using a temporary account format
+(~YEAR-XXXXX-XX) instead of raw IP addresses.
+Fixed by adding a second regex pattern to detect this
+format alongside the legacy IPv4 pattern.
 
