@@ -8,7 +8,7 @@ INSERT INTO `fpt-internship-2026.wikimedia_data.recentchange_transformed`
   length_old, length_new, comment, minor,
   edit_size, edit_direction, is_large_edit,
   contributor_type, is_vandalism_signal, hour_of_day,
-  content_change_category, is_english
+  content_change_category, is_english, is_high_value_contributor
 )
 SELECT
   id,
@@ -63,7 +63,21 @@ SELECT
   END AS content_change_category,
 
   -- is_english: flag edits made on English Wikipedia specifically
-  (wiki = 'enwiki') AS is_english
+  (wiki = 'enwiki') AS is_english,
+
+
+  -- is_high_value_contributor: registered human making a large constructive edit
+  (
+    CASE
+      WHEN bot = TRUE THEN 'bot'
+      WHEN REGEXP_CONTAINS(user, r'^\d+\.\d+\.\d+\.\d+$') THEN 'anonymous'
+      WHEN REGEXP_CONTAINS(user, r'^~\d{4}-\d+-\d+$') THEN 'anonymous'
+      ELSE 'registered'
+    END = 'registered'
+  )
+  AND (length_new - length_old) > 0
+  AND ABS(length_new - length_old) > 500
+  AS is_high_value_contributor
 
 FROM `fpt-internship-2026.wikimedia_data.recentchange_landing` AS landing
 WHERE landing.id NOT IN (
