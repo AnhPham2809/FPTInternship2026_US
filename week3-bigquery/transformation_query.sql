@@ -8,7 +8,7 @@ INSERT INTO `fpt-internship-2026.wikimedia_data.recentchange_transformed`
   length_old, length_new, comment, minor,
   edit_size, edit_direction, is_large_edit,
   contributor_type, is_vandalism_signal, hour_of_day,
-  content_change_category, is_english, is_high_value_contributor
+  content_change_category, is_english, is_high_value_contributor, day_of_week
 )
 SELECT
   id,
@@ -77,7 +77,10 @@ SELECT
   )
   AND (length_new - length_old) > 0
   AND ABS(length_new - length_old) > 500
-  AS is_high_value_contributor
+  AS is_high_value_contributor,
+
+  -- day_of_week: name of weekday the edit happened
+  FORMAT_TIMESTAMP('%A', meta_dt) AS day_of_week
 
 FROM `fpt-internship-2026.wikimedia_data.recentchange_landing` AS landing
 WHERE landing.id NOT IN (
