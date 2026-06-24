@@ -22,6 +22,7 @@ SELECT
   length_old,
   length_new,
   comment,
+  
   minor,
 
   -- edit_size: how much content changed in bytes

@@ -23,7 +23,9 @@ SELECT
   edit_direction,             -- addition, deletion, or neutral
   minor,                      -- whether edit was flagged as minor
   day_of_week,                -- name of weekday the edit happened
+  comment_length,             -- character length of edit summary
   bot                         -- label: true answer to predict
+
 
 FROM `fpt-internship-2026.wikimedia_data.recentchange_transformed`
 
@@ -37,4 +39,5 @@ WHERE bot IS NOT NULL
   AND is_large_edit IS NOT NULL
   AND edit_direction IS NOT NULL
   AND minor IS NOT NULL
-  AND day_of_week IS NOT NULL;
+  AND day_of_week IS NOT NULL
+  AND comment_length IS NOT NULL;
