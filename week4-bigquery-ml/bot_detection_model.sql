@@ -22,6 +22,7 @@ SELECT
   is_large_edit,              -- whether edit size exceeded 500 bytes
   edit_direction,             -- addition, deletion, or neutral
   minor,                      -- whether edit was flagged as minor
+  day_of_week,                -- name of weekday the edit happened
   bot                         -- label: true answer to predict
 
 FROM `fpt-internship-2026.wikimedia_data.recentchange_transformed`
@@ -35,4 +36,5 @@ WHERE bot IS NOT NULL
   AND content_change_category IS NOT NULL
   AND is_large_edit IS NOT NULL
   AND edit_direction IS NOT NULL
-  AND minor IS NOT NULL;
+  AND minor IS NOT NULL
+  AND day_of_week IS NOT NULL;
