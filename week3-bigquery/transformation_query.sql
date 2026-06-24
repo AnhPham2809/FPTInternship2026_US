@@ -8,7 +8,7 @@ INSERT INTO `fpt-internship-2026.wikimedia_data.recentchange_transformed`
   length_old, length_new, comment, minor,
   edit_size, edit_direction, is_large_edit,
   contributor_type, is_vandalism_signal, hour_of_day,
-  content_change_category
+  content_change_category, is_english
 )
 SELECT
   id,
@@ -60,7 +60,10 @@ SELECT
     WHEN ABS(length_new - length_old) < 500 THEN 'moderate'
     WHEN ABS(length_new - length_old) < 2000 THEN 'major'
     ELSE 'massive'
-  END AS content_change_category
+  END AS content_change_category,
+
+  -- is_english: flag edits made on English Wikipedia specifically
+  (wiki = 'enwiki') AS is_english
 
 FROM `fpt-internship-2026.wikimedia_data.recentchange_landing` AS landing
 WHERE landing.id NOT IN (

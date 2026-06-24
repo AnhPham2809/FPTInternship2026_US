@@ -204,3 +204,12 @@ anonymous editors using a temporary account format
 Fixed by adding a second regex pattern to detect this
 format alongside the legacy IPv4 pattern.
 
+------------------------
+Week 4:
+ML:
+1. Use value to predict which edit is a bot and which is a human. THEN compare it back to see if it's true or false with the bot tag.
+2. Predict which human edits are most likely to be high-value contributions, using the signals built this week.
+
+Two versions:
+Offline Model
+Real time model.
