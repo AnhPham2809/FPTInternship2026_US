@@ -205,11 +205,62 @@ Fixed by adding a second regex pattern to detect this
 format alongside the legacy IPv4 pattern.
 
 ------------------------
-Week 4:
-ML:
-1. Use value to predict which edit is a bot and which is a human. THEN compare it back to see if it's true or false with the bot tag.
-2. Predict which human edits are most likely to be high-value contributions, using the signals built this week.
+-----------------------------------
+Week 4
+Date: June 22nd - 28th
+-----------------------------------
 
-Two versions:
-Offline Model
-Real time model.
+1. Scope Clarified by Mentor
+Two models needed: bot detection, high-value contributor.
+Each needs an offline version and a real-time version.
+
+2. New Features Added
+is_english, day_of_week, comment_length, user_edit_count
+day_of_week ended up useless - all data was one day, no variance.
+
+3. High-Value Label Defined
+registered + addition + large edit. ~5% positive rate, healthy.
+
+4. Bot Detection Model Built
+Logistic regression, behavioral features only, no contributor_type.
+
+5. Major Bug: Stale Evaluation Cache
+ML.EVALUATE() with no table reuses an old cached split.
+Same score (0.7941) across 6 feature changes - impossible.
+Fix: always pass an explicit table to ML.EVALUATE().
+Real score: AUC-ROC 0.8784. Target was passed the whole time.
+
+6. High-Value Model Built
+First try: AUC-ROC 1.0 - a red flag, not a win.
+Label leakage - features were literally part of the label formula.
+Removed leaking fields, retrained leak-free.
+Final: AUC-ROC 0.789 using namespace, is_english, hour_of_day,
+comment_length, user_edit_count, minor.
+
+7. Bot Model Validated Against Real Flag
+82.85% agreement.
+Missed bots: small repetitive editors, look human.
+Missed humans: very active power users, look like bots.
+Same root cause both ways - activity level overlap.
+
+8. Real-Time Prediction Tested
+Ran streamer.py, transformed, predicted on last 60 min of data.
+Both models worked correctly on brand new edits.
+Found bug: user_edit_count wasn't refreshed for new rows.
+Fix: refresh_user_edit_count.sql, run after every transformation.
+
+Final Results:
+Bot detection: AUC-ROC 0.8784 - passed.
+High-value contributor: AUC-ROC 0.789 - leak-free, close, documented.
+
+Biggest Lessons:
+Always use an explicit table with ML.EVALUATE().
+A perfect score means check for leakage, not celebrate.
+New columns need a permanent spot in the pipeline, not just a backfill.
+
+-----------------------------------
+Week 5 Plan
+-----------------------------------
+Java Microservice & Alert Triggers.
+Query BigQuery from Java, fire alerts above 0.85 score.
+Target: sub-200ms response time.
