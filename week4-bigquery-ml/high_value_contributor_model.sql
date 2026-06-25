@@ -16,18 +16,21 @@ OPTIONS(
 AS
 -- Training data: features + label
 SELECT
-  namespace,                  -- page namespace edited
-  is_english,                  -- whether edit was on English Wikipedia
-  hour_of_day,                  -- hour the edit happened
-  comment_length,                 -- character length of edit summary
-  is_high_value_contributor          -- label: true answer to predict
+  namespace,
+  is_english,
+  hour_of_day,
+  comment_length,
+  user_edit_count,
+  minor,
+  is_high_value_contributor
 
 FROM `fpt-internship-2026.wikimedia_data.recentchange_transformed`
 
--- Filter to human-only edits, exclude bots entirely
 WHERE contributor_type != 'bot'
   AND is_high_value_contributor IS NOT NULL
   AND namespace IS NOT NULL
   AND is_english IS NOT NULL
   AND hour_of_day IS NOT NULL
-  AND comment_length IS NOT NULL;
+  AND comment_length IS NOT NULL
+  AND user_edit_count IS NOT NULL
+  AND minor IS NOT NULL;
