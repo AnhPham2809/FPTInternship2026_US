@@ -1,0 +1,17 @@
+column,pct_null,distinct,detail
+bot,0.0,2,top=True (50.1% of rows)
+minor,0.0,2,top=False (83.2% of rows)
+edit_size,0.0,3598,min=-157261 median=105 mean=1068.0 max=88139
+length_old,0.0,21673,min=0 median=7996 mean=21406.3 max=2044420
+length_new,0.0,21952,min=0 median=8736 mean=22474.2 max=2046949
+hour_of_day,0.0,7,top=6 (49.5% of rows)
+comment_length,0.0,307,min=0 median=93 mean=94.9 max=500
+user_edit_count,0.01,139,min=1 median=525 mean=1639.4 max=8650
+namespace,0.0,38,min=0 median=0 mean=5.2 max=1728
+contributor_type,0.0,3,top=bot (50.1% of rows)
+edit_direction,0.0,3,top=addition (80.3% of rows)
+content_change_category,0.0,4,top=moderate (38.2% of rows)
+day_of_week,0.0,2,top=Thursday (65.4% of rows)
+is_large_edit,0.0,2,top=False (68.7% of rows)
+is_english,1.95,2,top=False (90.2% of rows)
+is_vandalism_signal,0.0,2,top=False (100.0% of rows)
