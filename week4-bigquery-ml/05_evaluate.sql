@@ -1,6 +1,5 @@
--- ============ BOT MODEL ============
--- Balanced classes (~50/50), so accuracy and roc_auc are both fair to report.
--- roc_auc must clear 0.80 per the program spec.
+-- BOT MODEL 
+
 SELECT 'bot' AS model, *
 FROM ML.EVALUATE(
   MODEL `fpt-internship-2026.wikimedia_data.logreg_bot`,
@@ -18,10 +17,7 @@ FROM ML.EVALUATE(
   )
 );
 
--- ============ MINOR MODEL ============
--- Imbalanced (~17% minor), so precision/recall matter more than accuracy.
--- Same anon-excluded scope as training (anon editors can't mark minor).
-SELECT 'minor' AS model, *
+-- MINOR MODEL 
 FROM ML.EVALUATE(
   MODEL `fpt-internship-2026.wikimedia_data.logreg_minor`,
   (

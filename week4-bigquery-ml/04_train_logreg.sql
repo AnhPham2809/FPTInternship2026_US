@@ -18,7 +18,7 @@ SELECT
 FROM `fpt-internship-2026.wikimedia_data.ml_dataset`
 WHERE split_set='TRAIN' AND length_old IS NOT NULL; -- training rows only
 
--- ============ MINOR PREDICTION ============
+--MINOR PREDICTION 
 CREATE OR REPLACE MODEL `fpt-internship-2026.wikimedia_data.logreg_minor`
 OPTIONS(
   model_type='LOGISTIC_REG',
