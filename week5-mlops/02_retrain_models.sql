@@ -4,7 +4,7 @@
 -- re-running this retrains both models on the larger dataset.
 -- Uses the same justified feature sets and scoping from Week 4.
 
--- ============ BOT MODEL ============
+-- BOT MODEL 
 CREATE OR REPLACE MODEL `fpt-internship-2026.wikimedia_data.logreg_bot`
 OPTIONS(
   model_type='LOGISTIC_REG',      -- same model type as Week 4
@@ -24,7 +24,7 @@ SELECT
 FROM `fpt-internship-2026.wikimedia_data.ml_dataset`
 WHERE split_set='TRAIN' AND length_old IS NOT NULL;       -- train on latest accumulated TRAIN rows
 
--- ============ MINOR MODEL ============
+-- MINOR MODEL 
 CREATE OR REPLACE MODEL `fpt-internship-2026.wikimedia_data.logreg_minor`
 OPTIONS(
   model_type='LOGISTIC_REG',
