@@ -259,8 +259,89 @@ A perfect score means check for leakage, not celebrate.
 New columns need a permanent spot in the pipeline, not just a backfill.
 
 -----------------------------------
-Week 5 Plan
+Week 5
+Date: July 13th - 19th
 -----------------------------------
-Java Microservice & Alert Triggers.
-Query BigQuery from Java, fire alerts above 0.85 score.
-Target: sub-200ms response time.
+
+1. Scope Clarified by Mentor
+Three parts this week:
+(A) Java microservice that alerts on predictions above 0.85 score.
+(B) Continue training the models as new data arrives.
+(C) Dashboard visualizing data per day, model weights changing,
+and prediction performance (accuracy, recall, precision).
+
+2. Understanding MLOps
+MLOps = getting a model into production and keeping it working:
+deployment, automation, monitoring, retraining.
+Core problem it solves: models decay silently as the world changes
+(data drift, concept drift). They don't crash, they just get worse.
+Week 5 is the shift from "a model that works once" to "a live system."
+
+3. Continuous Training Setup
+BigQuery ML can't update a model in place - it retrains from scratch.
+So "continuous training" = scheduled retraining on the growing dataset.
+Built 03_scheduled_retrain.sql as the full chain:
+transform new data -> refresh user_edit_count -> rebuild ml_dataset
+with split -> retrain both models -> log metrics.
+Scheduled it as a BigQuery Scheduled Query every 6 hours.
+
+4. Metrics Logging
+Created three tracking tables (01_create_metrics_tables.sql):
+metrics_data_volume, metrics_model_weights, metrics_performance.
+Used CREATE TABLE IF NOT EXISTS so history is never wiped.
+Weights logged in long format (one row per feature per retrain)
+so it charts cleanly and handles both models' feature sets.
+
+5. Java Alert Service
+Installed JDK 21 + Maven. Built alert-service as a Maven project.
+Object-oriented, five single-responsibility classes:
+Prediction (data), BigQueryClient (data access), AlertService
+(the 0.85 threshold logic), AlertNotifier (output), Main (wiring).
+Reads from a new bot_predictions view (ML.PREDICT on the bot model).
+Threshold is a constructor parameter, not hardcoded - it's a
+precision/recall dial, same tradeoff idea from Week 4 Slide 6.
+
+6. Latency Fix
+First run measured 542ms - over the 200ms target.
+Root cause was NOT the logic - it was printing 5,679 alert lines
+to the console (slow I/O). The spec means per-row evaluation.
+Measured per-row instead: 0.00019ms per row across 26,794 rows.
+Lesson: measure the thing the spec actually asks for, not a batch
+of console prints.
+
+7. Monitoring Dashboard
+Self-contained HTML with Chart.js, three charts, bot/minor toggle:
+records per day, performance over time, weights over time.
+The final snapshot visibly jumped when fresh data arrived after
+a power outage - continuous training made observable.
+
+Final Result for Week 5:
+Continuous retraining scheduled and logging snapshots every 6 hours.
+Java service fires alerts on >0.85 predictions, ~0.0002ms per row
+(far under 200ms target - passed).
+Dashboard shows all three required metrics for both models.
+
+Issues/Challenges:
+Pipeline gap found: streamer kept the landing table fresh, but the
+transformation step wasn't auto-running, so the transformed table
+was 3 weeks stale. Continuous training would have retrained on old
+data. Fixed by folding the full chain (transform + refresh + split)
+into the scheduled job, not just the retrain.
+
+refresh_user_edit_count only updated null rows. That's wrong for
+continuous running - counts grow as users make new edits. Dropped
+the IS NULL filter so it recalculates every row each cycle.
+
+Java files saved to the wrong folder after a power outage (VS Code
+closed before saving to src/main/java/...). Maven only compiles
+files under src/main/java, so they were invisible. Moved them into
+the correct package folder.
+
+Latency looked like a fail (542ms) but was really console I/O, not
+evaluation speed. Reframed to per-row latency, which is what the
+spec actually asks for.
+
+Known limitation: streamer runs locally, so a power outage paused
+ingestion and several retrain snapshots are identical (models
+correctly didn't move without new data). In production the streamer
+would run on a server.
