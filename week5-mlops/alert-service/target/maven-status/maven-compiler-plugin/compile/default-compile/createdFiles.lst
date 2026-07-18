@@ -1,0 +1,6 @@
+com/fpt/alertservice/App.class
+com/fpt/alertservice/Main.class
+com/fpt/alertservice/AlertNotifier.class
+com/fpt/alertservice/AlertService.class
+com/fpt/alertservice/BigQueryClient.class
+com/fpt/alertservice/Prediction.class
