@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 5 - Model Monitoring Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #0f1720; --card: #17212b; --ink: #e6edf3; --muted: #8b98a5;
+    --border: #263340; --bot: #3987e5; --minor: #e8843c; --grid: #223040;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  header { margin-bottom: 8px; }
+  h1 { font-size: 24px; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 14px; margin-bottom: 28px; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .kpi .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+  .kpi .val { font-size: 26px; font-weight: 600; margin-top: 6px; }
+  .kpi .val.small { font-size: 18px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .card.full { grid-column: 1 / -1; }
+  .card h2 { font-size: 15px; font-weight: 600; margin: 0 0 4px; }
+  .card p { color: var(--muted); font-size: 12.5px; margin: 0 0 16px; }
+  .chart-wrap { position: relative; height: 260px; }
+  .toggle { display: inline-flex; gap: 6px; margin-bottom: 14px; }
+  .toggle button {
+    background: transparent; color: var(--muted); border: 1px solid var(--border);
+    border-radius: 8px; padding: 5px 14px; font-size: 13px; cursor: pointer;
+  }
+  .toggle button.active { background: var(--bot); color: #fff; border-color: var(--bot); }
+  .note { color: var(--muted); font-size: 12px; margin-top: 24px; line-height: 1.6; }
+  @media (max-width: 820px){ .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Model Monitoring Dashboard</h1>
+  <div class="sub">Week 5 &middot; continuous training &amp; observability &middot; bot + minor models</div>
+</header>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="grid">
+  <div class="card full">
+    <h2>Data records per day</h2>
+    <p>How much edit data has been ingested and processed into the transformed table.</p>
+    <div class="chart-wrap"><canvas id="volumeChart" role="img" aria-label="Bar chart of records ingested per day"></canvas></div>
+  </div>
+
+  <div class="card full">
+    <h2>Prediction performance over time</h2>
+    <p>Accuracy, precision, recall, and AUC at each retrain. Recall is the honest metric for the imbalanced minor model.</p>
+    <div class="toggle" id="perfToggle">
+      <button data-model="bot" class="active">Bot model</button>
+      <button data-model="minor">Minor model</button>
+    </div>
+    <div class="chart-wrap"><canvas id="perfChart" role="img" aria-label="Line chart of model performance metrics over time"></canvas></div>
+  </div>
+
+  <div class="card full">
+    <h2>Model weights over time</h2>
+    <p>How each numeric coefficient shifts as the model retrains on new data. Movement here = the model learning.</p>
+    <div class="toggle" id="weightToggle">
+      <button data-model="bot" class="active">Bot model</button>
+      <button data-model="minor">Minor model</button>
+    </div>
+    <div class="chart-wrap"><canvas id="weightChart" role="img" aria-label="Line chart of model coefficients over time"></canvas></div>
+  </div>
+</div>
+
+<div class="note">
+  Data snapshots logged automatically by the scheduled retraining job (every 6 hours) into the
+  <code>metrics_performance</code>, <code>metrics_model_weights</code>, and <code>metrics_data_volume</code> tables.
+  This is a static export for demo; in production the dashboard would query BigQuery live.
+</div>
+
+<script>
+// ---- data (exported from BigQuery metrics tables) ----
+const perfData = [
+  {ts:"07-17 20:12", model:"bot",   accuracy:0.7431, precision:0.7268, recall:0.7002, auc:0.8492},
+  {ts:"07-17 20:12", model:"minor", accuracy:0.8148, precision:0.6406, recall:0.1566, auc:0.8263},
+  {ts:"07-17 20:34", model:"bot",   accuracy:0.7431, precision:0.7268, recall:0.7002, auc:0.8492},
+  {ts:"07-17 20:34", model:"minor", accuracy:0.8148, precision:0.6406, recall:0.1566, auc:0.8263},
+  {ts:"07-18 02:04", model:"bot",   accuracy:0.7431, precision:0.7268, recall:0.7002, auc:0.8492},
+  {ts:"07-18 02:04", model:"minor", accuracy:0.8148, precision:0.6406, recall:0.1566, auc:0.8263},
+  {ts:"07-18 08:04", model:"bot",   accuracy:0.7431, precision:0.7268, recall:0.7002, auc:0.8492},
+  {ts:"07-18 08:04", model:"minor", accuracy:0.8148, precision:0.6406, recall:0.1566, auc:0.8263},
+  {ts:"07-18 14:04", model:"bot",   accuracy:0.7431, precision:0.7268, recall:0.7002, auc:0.8492},
+  {ts:"07-18 14:04", model:"minor", accuracy:0.8148, precision:0.6406, recall:0.1566, auc:0.8263},
+  {ts:"07-18 20:04", model:"bot",   accuracy:0.7634, precision:0.7604, recall:0.6857, auc:0.8525},
+  {ts:"07-18 20:04", model:"minor", accuracy:0.8237, precision:0.7295, recall:0.2324, auc:0.8410},
+];
+
+const weightData = [
+  {ts:"07-17 20:12", model:"bot",   comment_length:0.006678, edit_size:0.00007,  length_old:-0.000002, user_edit_count:0.000334},
+  {ts:"07-17 20:12", model:"minor", comment_length:-0.005266,edit_size:-0.000058, length_old:-0.000005, user_edit_count:-0.000228},
+  {ts:"07-17 20:34", model:"bot",   comment_length:0.006678, edit_size:0.00007,  length_old:-0.000002, user_edit_count:0.000334},
+  {ts:"07-17 20:34", model:"minor", comment_length:-0.005266,edit_size:-0.000058, length_old:-0.000005, user_edit_count:-0.000228},
+  {ts:"07-18 02:04", model:"bot",   comment_length:0.006678, edit_size:0.00007,  length_old:-0.000002, user_edit_count:0.000334},
+  {ts:"07-18 02:04", model:"minor", comment_length:-0.005266,edit_size:-0.000058, length_old:-0.000005, user_edit_count:-0.000228},
+  {ts:"07-18 08:04", model:"bot",   comment_length:0.006678, edit_size:0.00007,  length_old:-0.000002, user_edit_count:0.000334},
+  {ts:"07-18 08:04", model:"minor", comment_length:-0.005266,edit_size:-0.000058, length_old:-0.000005, user_edit_count:-0.000228},
+  {ts:"07-18 14:04", model:"bot",   comment_length:0.006678, edit_size:0.00007,  length_old:-0.000002, user_edit_count:0.000334},
+  {ts:"07-18 14:04", model:"minor", comment_length:-0.005266,edit_size:-0.000058, length_old:-0.000005, user_edit_count:-0.000228},
+  {ts:"07-18 20:04", model:"bot",   comment_length:0.007486, edit_size:0.000101, length_old:-0.000003, user_edit_count:0.000375},
+  {ts:"07-18 20:04", model:"minor", comment_length:-0.005332,edit_size:-0.000059, length_old:-0.000006, user_edit_count:-0.000184},
+];
+
+const volumeData = [
+  {date:"06-17", count:8866}, {date:"06-18", count:26567}, {date:"06-24", count:9693},
+  {date:"06-25", count:8579}, {date:"07-17", count:47834}, {date:"07-18", count:31931},
+];
+
+// ---- shared chart styling ----
+const GRID = "#223040", MUTED = "#8b98a5";
+Chart.defaults.color = MUTED;
+Chart.defaults.font.family = "-apple-system, Segoe UI, Roboto, sans-serif";
+const metricColors = { accuracy:"#3987e5", precision:"#1baf7a", recall:"#e8843c", auc:"#9085e9" };
+const weightColors = { comment_length:"#3987e5", edit_size:"#1baf7a", length_old:"#e8843c", user_edit_count:"#9085e9" };
+
+// ---- KPI cards (latest snapshot) ----
+const latestBot = perfData.filter(d=>d.model==="bot").at(-1);
+const latestMinor = perfData.filter(d=>d.model==="minor").at(-1);
+const totalRecords = volumeData.reduce((s,d)=>s+d.count,0);
+document.getElementById("kpis").innerHTML = `
+  <div class="kpi"><div class="label">Bot AUC (latest)</div><div class="val">${latestBot.auc.toFixed(3)}</div></div>
+  <div class="kpi"><div class="label">Minor AUC (latest)</div><div class="val">${latestMinor.auc.toFixed(3)}</div></div>
+  <div class="kpi"><div class="label">Minor recall (latest)</div><div class="val">${latestMinor.recall.toFixed(3)}</div></div>
+  <div class="kpi"><div class="label">Retrain snapshots</div><div class="val">${perfData.length/2}</div></div>
+  <div class="kpi"><div class="label">Total records</div><div class="val small">${totalRecords.toLocaleString()}</div></div>
+`;
+
+// ---- Chart 1: data volume ----
+new Chart(document.getElementById("volumeChart"), {
+  type: "bar",
+  data: { labels: volumeData.map(d=>d.date),
+    datasets: [{ label:"Records", data: volumeData.map(d=>d.count), backgroundColor:"#3987e5", borderRadius:4 }] },
+  options: { responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false} },
+    scales:{ y:{ grid:{color:GRID}, beginAtZero:true }, x:{ grid:{display:false} } } }
+});
+
+// ---- Chart 2: performance over time (toggle model) ----
+let perfChart;
+function drawPerf(model){
+  const rows = perfData.filter(d=>d.model===model);
+  const ds = ["accuracy","precision","recall","auc"].map(m=>({
+    label:m, data:rows.map(r=>r[m]), borderColor:metricColors[m], backgroundColor:metricColors[m],
+    tension:0.3, pointRadius:3, borderWidth:2
+  }));
+  if(perfChart) perfChart.destroy();
+  perfChart = new Chart(document.getElementById("perfChart"), {
+    type:"line", data:{ labels:rows.map(r=>r.ts), datasets:ds },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:"top"} },
+      scales:{ y:{ grid:{color:GRID}, min:0, max:1 }, x:{ grid:{display:false} } } }
+  });
+}
+drawPerf("bot");
+
+// ---- Chart 3: weights over time (toggle model) ----
+let weightChart;
+function drawWeights(model){
+  const rows = weightData.filter(d=>d.model===model);
+  const feats = ["comment_length","edit_size","length_old","user_edit_count"];
+  const ds = feats.map(f=>({
+    label:f, data:rows.map(r=>r[f]), borderColor:weightColors[f], backgroundColor:weightColors[f],
+    tension:0.3, pointRadius:3, borderWidth:2
+  }));
+  if(weightChart) weightChart.destroy();
+  weightChart = new Chart(document.getElementById("weightChart"), {
+    type:"line", data:{ labels:rows.map(r=>r.ts), datasets:ds },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:"top"} },
+      scales:{ y:{ grid:{color:GRID} }, x:{ grid:{display:false} } } }
+  });
+}
+drawWeights("bot");
+
+// ---- toggle handlers ----
+document.querySelectorAll("#perfToggle button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#perfToggle button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active"); drawPerf(b.dataset.model);
+});
+document.querySelectorAll("#weightToggle button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#weightToggle button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active"); drawWeights(b.dataset.model);
+});
+</script>
+</body>
+</html>
